@@ -51,24 +51,98 @@ if playlist_id:
     track_duration = [track["track"]["duration_ms"] for track in tracks]
     track_album = [track["track"]["album"]["name"] for track in tracks]
     track_release_date = [track["track"]["album"]["release_date"] for track in tracks]
+    track_cover_image = [track["track"]["album"]["images"] for track in tracks]
 
 # display the playlist data in a table
-    st.write(f"## {playlist['name']}")
-    st.write(f"**Description:** {playlist['description']}")
-    st.write(f"**Number of tracks:** {len(tracks)}")
-    st.write("")
-    st.write("### Tracklist")
-    st.write("| Name | Artist | Album | Release Date | Popularity | Duration (ms) |")
-    st.write("| ---- | ------ | ----- | ------------ | ---------- | -------------- |")
-    for i in range(len(tracks)):
-        st.write(f"| {track_names[i]} | {track_artists[i]} | {track_album[i]} | {track_release_date[i]} | {track_popularity[i]} | {track_duration[i]} |")
+    # Define the layout using Streamlit's columns
+    col1, col2 = st.columns([1, 2])
 
-        # create a dataframe from the playlist data
-        data = {"Name": track_names, "Artist": track_artists, "Album": track_album, "Release Date": track_release_date,
-                "Popularity": track_popularity, "Duration (ms)": track_duration}
-        df = pd.DataFrame(data)
+    # Display the image on the left side
+    with col1:
+        st.image(playlist['images'][0]['url'], width=200)
+        # Apply CSS styling to the image container
+        st.markdown(
+            """
+            <style>
+            [data-testid="stImage"] {
+                border: 2px solid white; /* Add a white border */
+            }
+            </style>
+            """,
+            unsafe_allow_html=True
+        )
 
-# display a histogram of track popularity
+    # Display playlist information on the right side
+    with col2:
+        st.write(f"## {playlist['name']}")
+        st.write(f"**Description:** {playlist['description']}")
+        st.write(f"**Number of tracks:** {len(tracks)}")
+
+
+    # Function to display tracks
+    def display_tracks(num_tracks_to_display):
+        for i in range(num_tracks_to_display):
+            with col1:
+                if len(track_cover_image) > 0:
+                    st.image(track_cover_image[i][0]['url'], width=50)
+                else:
+                    st.image(
+                        'https://t3.ftcdn.net/jpg/04/60/01/36/360_F_460013622_6xF8uN6ubMvLx0tAJECBHfKPoNOR5cRa.jpg',
+                        width=100)  # Provide a default image URL or placeholder
+
+            with col2:
+                st.markdown(
+                    f"""
+                    <style>
+                    .gray-text {{
+                        color: gray;
+                        position: relative;
+                        top: -2px;
+                    }}
+                    .main-and-gray-text{{
+                        height: 53px;
+                        margin: 0 0 1rem 0
+                    }}
+                    </style>
+                    <div class="main-and-gray-text">
+                    <div class="main-text">{track_names[i]}</div>
+                    <div class="gray-text">{track_artists[i]}</div>
+                    </div>
+                    """,
+                    unsafe_allow_html=True
+                )
+
+
+    # Main Streamlit app
+    st.title('Playlist')
+
+    # Number of tracks to initially display
+    num_initial_tracks = 5
+
+    # Columns to display tracks
+    col1, col2 = st.columns([1, 10])
+
+    # Display initial set of tracks
+    display_tracks(num_initial_tracks)
+
+    # Button to expand and show all tracks
+    if len(track_names) > num_initial_tracks:
+        if st.button('Show all tracks'):
+            st.write('All tracks:')
+            display_tracks(len(track_names))
+
+    # Create a DataFrame from the playlist data
+    data = {
+        "Name": track_names,
+        "Artist": track_artists,
+        "Album": track_album,
+        "Release Date": track_release_date,
+        "Popularity": track_popularity,
+        "Duration (ms)": track_duration
+    }
+    df = pd.DataFrame(data)
+
+    # display a histogram of track popularity
     fig_popularity = px.histogram(df, x="Popularity", nbins=20, title="Track Popularity Distribution")
     st.plotly_chart(fig_popularity)
 
